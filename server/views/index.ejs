@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <title>Real-Time Chat</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-size: 1rem;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      background-color: #000;
+      color: #fff;
+    }
+
+    main {
+      height: 100vh;
+      padding: 1rem;
+      display: flex;
+      flex-flow: column;
+    }
+
+    form {
+      width: 100%;
+      margin: auto;
+      max-width: 600px;
+      display: flex;
+      flex-flow: row nowrap;
+      justify-content: center;
+      gap: .25rem;
+    }
+
+    input {
+      flex-grow: 1;
+      max-width: calc(80% - .25rem);
+    }
+
+    button {
+      width: 20%;
+    }
+
+    input,
+    button {
+      border-radius: 10px;
+      padding: .5rem;
+    }
+
+    .chat-display {
+      background-color: #333;
+      list-style-type: none;
+      width: 100%;
+      max-width: 600px;
+      border-radius: 10px;
+      margin: 1rem auto;
+      padding: 0;
+      display: flex;
+      flex-flow: column;
+      justify-content: left;
+      overflow: auto;
+      flex-grow: 1;
+    }
+
+    .post {
+      background-color: #eee;
+      border-radius: 10px;
+      padding: 0 0 .25rem;
+      margin: .5rem;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .post--left {
+      width: 60%;
+      align-self: flex-start;
+    }
+
+    .post--right {
+      width: 60%;
+      align-self: flex-end;
+    }
+
+    .post__header {
+      color: #fff;
+      padding: .25rem .5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    .post__header--user {
+      background-color: blue;
+    }
+
+    .post__header--reply {
+      background-color: purple;
+    }
+
+    .post__header--name {
+      font-weight: bold;
+    }
+
+    .post__header--time {
+      font-size: .8rem;
+    }
+
+    .post__text {
+      margin-top: 5px;
+      color: #333;
+      padding: .25rem .5rem;
+    }
+
+    .user-list,
+    .room-list,
+    .activity {
+      width: 100%;
+      min-height: 2.65rem;
+      margin: 0 auto;
+      max-width: 600px;
+      padding: .75rem .25rem;
+    }
+
+    .activity {
+      font-style: italic;
+    }
+  </style>
+  
+</head>
+
+<body>
+  <main>
+    <form class="form-join">
+      <input type="text" id="name" maxlength="8" placeholder="Your name" size="5" required>
+      <input type="text" id="room" placeholder="Chat room" size="5" required>
+      <button id="join" type="submit">Join</button>
+    </form>
+
+    <ul class="chat-display"></ul>
+
+    <p class="user-list"></p>
+    <p class="room-list"></p>
+    <p class="activity"></p>
+
+    <form class="form-msg">
+      <input type="text" id="message" placeholder="Your message" required>
+      <button type="submit">Send</button>
+    </form>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io('ws://localhost:3500');
+
+    const msgInput = document.querySelector('#message');
+    const nameInput = document.querySelector('#name');
+    const chatRoom = document.querySelector('#room');
+    const activity = document.querySelector('.activity');
+    const usersList = document.querySelector('.user-list');
+    const roomList = document.querySelector('.room-list');
+    const chatDisplay = document.querySelector('.chat-display');
+
+    function sendMessage(e) {
+      e.preventDefault();
+      if (nameInput.value && msgInput.value && chatRoom.value) {
+        socket.emit('message', {
+          name: nameInput.value,
+          text: msgInput.value
+        });
+        msgInput.value = "";
+      }
+      msgInput.focus();
+    }
+
+    function enterRoom(e) {
+      e.preventDefault();
+      if (nameInput.value && chatRoom.value) {
+        socket.emit('enterRoom', {
+          name: nameInput.value,
+          room: chatRoom.value
+        });
+      }
+    }
+
+    document.querySelector('.form-msg').addEventListener('submit', sendMessage);
+    document.querySelector('.form-join').addEventListener('submit', enterRoom);
+
+    msgInput.addEventListener('keypress', () => {
+      socket.emit('activity', nameInput.value);
+    });
+
+    socket.on('loadMessages', (messages) => {
+      chatDisplay.innerHTML = ''; // Clear the chat display
+      messages.forEach(message => {
+        const li = document.createElement('li');
+        li.className = 'post';
+        if (message.user === nameInput.value) li.className = 'post post--left';
+        if (message.user !== nameInput.value && message.user !== 'Admin') li.className = 'post post--right';
+        if (message.user !== 'Admin') {
+          li.innerHTML = `<div class="post__header ${message.user === nameInput.value
+            ? 'post__header--user'
+            : 'post__header--reply'
+            }">
+            <span class="post__header--name">${message.user}</span> 
+            <span class="post__header--time">${new Date(message.timestamp).toLocaleTimeString()}</span> 
+            </div>
+            <div class="post__text">${message.text}</div>`;
+        } else {
+          li.innerHTML = `<div class="post__text">${message.text}</div>`;
+        }
+        chatDisplay.appendChild(li);
+      });
+
+      chatDisplay.scrollTop = chatDisplay.scrollHeight;
+    });
+
+    socket.on('message', (data) => {
+      activity.textContent = "";
+      const { name, text, time } = data;
+      const li = document.createElement('li');
+      li.className = 'post';
+      if (name === nameInput.value) li.className = 'post post--left';
+      if (name !== nameInput.value && name !== 'Admin') li.className = 'post post--right';
+      if (name !== 'Admin') {
+        li.innerHTML = `<div class="post__header ${name === nameInput.value
+          ? 'post__header--user'
+          : 'post__header--reply'
+          }">
+          <span class="post__header--name">${name}</span> 
+          <span class="post__header--time">${time}</span> 
+          </div>
+          <div class="post__text">${text}</div>`;
+      } else {
+        li.innerHTML = `<div class="post__text">${text}</div>`;
+      }
+      chatDisplay.appendChild(li);
+
+      chatDisplay.scrollTop = chatDisplay.scrollHeight;
+    });
+
+    let activityTimer;
+    socket.on('activity', (name) => {
+      activity.textContent = `${name} is typing...`;
+
+      // Clear after 3 seconds 
+      clearTimeout(activityTimer);
+      activityTimer = setTimeout(() => {
+        activity.textContent = "";
+      }, 3000);
+    });
+
+    socket.on('userList', ({ users }) => {
+      showUsers(users);
+    });
+
+    socket.on('roomList', ({ rooms }) => {
+      showRooms(rooms);
+    });
+
+    function showUsers(users) {
+      usersList.textContent = '';
+      if (users) {
+        usersList.innerHTML = `<em>Users in ${chatRoom.value}:</em>`;
+        users.forEach((user, i) => {
+          usersList.textContent += ` ${user.name}`;
+          if (users.length > 1 && i !== users.length - 1) {
+            usersList.textContent += ",";
+          }
+        });
+      }
+    }
+
+    function showRooms(rooms) {
+      roomList.textContent = '';
+      if (rooms) {
+        roomList.innerHTML = '<em>Active Rooms:</em>';
+        rooms.forEach((room, i) => {
+          roomList.textContent += ` ${room}`;
+          if (rooms.length > 1 && i !== rooms.length - 1) {
+            roomList.textContent += ",";
+          }
+        });
+      }
+    }
+  </script>
+</body>
+</html>
