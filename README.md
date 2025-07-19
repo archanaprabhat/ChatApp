@@ -43,7 +43,7 @@ This project was built to practice real-time communication using WebSockets. The
 ## 🚀 How to Run Locally
 
 ```bash
-git clone https://github.com/your-username/chat-app.git
+https://github.com/archanaprabhat/ChatApp.git
 cd chat-app
 npm install
 npm run dev
