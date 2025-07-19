@@ -6,6 +6,8 @@ This project was built to practice real-time communication using WebSockets. The
 
 ---
 
+▶️ [Real-Time Chat App Demo](https://www.youtube.com/shorts/--Hswuwx7jw)
+
 ## 🔧 Tech Stack
 
 **Backend:**
