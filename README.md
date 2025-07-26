@@ -8,7 +8,7 @@ This project was built to practice real-time communication using WebSockets. The
 
 ▶️ [Real-Time Chat App Demo](https://www.youtube.com/shorts/--Hswuwx7jw)
 
-## 🔧 Tech Stack
+## Tech Stack
 
 **Backend:**
 - Node.js
@@ -30,7 +30,7 @@ This project was built to practice real-time communication using WebSockets. The
 
 ---
 
-## ⚙️ Features
+## Features
 
 - Real-time messaging
 - Multiple chat rooms
@@ -42,7 +42,7 @@ This project was built to practice real-time communication using WebSockets. The
 
 ---
 
-## 🚀 How to Run Locally
+##  How to Run Locally
 
 ```bash
 https://github.com/archanaprabhat/ChatApp.git
